@@ -140,14 +140,15 @@ procedure Panel is
               NewSpeed := Speed + SpeedIncrease;
           end if;
       else
-          if IncrementValue < 0 then
+          if IncrementValue < -5  then
               IncrementValue := IncrementValue + SpeedIncrease;
               NewSpeed := Speed - SpeedIncrease;
-         else if IncrementValue > 0 then
+         else if IncrementValue > 5 then
              IncrementValue := IncrementValue - SpeedIncrease;
              NewSpeed := Speed + SpeedIncrease;
          else
-             NewSpeed := Speed;
+             NewSpeed := Speed + IncrementValue;
+             IncrementValue := 0;
          end if;
         end if;
       end if;
@@ -191,8 +192,10 @@ begin
           when 'w' => ShouldSlowDown := False;
           when 's' => ShouldSlowDown := True;
           when 'e' => IsCruiseControlActive := not IsCruiseControlActive;
-          when 'a' => IncrementValue := 10;
-          when 'd' => IncrementValue := -10;
+          when 'r' => IncrementValue := 10;
+          when 'f' => IncrementValue := -10;
+          when 't' => IncrementValue := 1;
+          when 'g' => IncrementValue := -1;
           when 'q' => exit;
           when others  => null;
       end case;
