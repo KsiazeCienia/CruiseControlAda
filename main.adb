@@ -54,12 +54,14 @@ procedure Main is
                 NewSpeed := Speed + Random(G);
             end if;
         else
+            if IncrementValue != 0 then
+                NewSpeed := Speed;
+            end
             NewSpeed := Speed;
+
         end if;
         return NewSpeed;
     end SpeedControl;
-
-
 
 
     task Drive;
@@ -78,14 +80,12 @@ procedure Main is
         loop
             delay until Next;
             Speed := Main.SpeedControl(Speed);
-            Put_Line("Aktualna prędkośc wynosi" & Speed'Img & "km\h");
+            Panel.Ekran.Pisz_Float_XY(23, 5, Speed, Panel.Atryb=>Negatyw);
             Next := Next + Interval;
         end loop;
     exception
         when others => null;
     end Drive;
-
-
 
     task WaitingForKeyboardEvent;
 

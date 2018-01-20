@@ -129,17 +129,29 @@ procedure Panel is
       use Losuj;
       G : Generator;
       NewSpeed : Integer;
+      SpeedIncrease : Integer;
   begin
       Reset(G);
+      SpeedIncrease := Random(G);
       if not IsCruiseControlActive then
           if shouldSlowDown then
-              NewSpeed := Speed - Random(G);
+              NewSpeed := Speed - SpeedIncrease;
           else
-              NewSpeed := Speed + Random(G);
+              NewSpeed := Speed + SpeedIncrease;
           end if;
       else
-          NewSpeed := Speed;
+          if IncrementValue < 0 then
+              IncrementValue := IncrementValue + SpeedIncrease;
+              NewSpeed := Speed - SpeedIncrease;
+         else if IncrementValue > 0 then
+             IncrementValue := IncrementValue - SpeedIncrease;
+             NewSpeed := Speed + SpeedIncrease;
+         else
+             NewSpeed := Speed;
+         end if;
+        end if;
       end if;
+
       return NewSpeed;
   end SpeedControl;
 
