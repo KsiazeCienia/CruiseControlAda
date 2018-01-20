@@ -106,7 +106,7 @@ procedure Panel is
       Ekran.Pisz_XY(1,16,"F - zminiejsz prędkość tempomatu o 10km/h");
       Ekran.Pisz_XY(1,17,"T - zwiększ prędkość tempomatu o 1 km/h");
       Ekran.Pisz_XY(1,18,"G - zminiejsz prędkość tempoamtu o 1 km/h");
-
+      Ekran.Pisz_XY(1,19,"Q - Wyjście");
     end Tlo;
 
   end Ekran;
@@ -161,6 +161,9 @@ procedure Panel is
              IncrementValue := 0;
          end if;
         end if;
+      end if;
+      if NewSpeed < 0 then
+          NewSpeed := 0;
       end if;
 
       return NewSpeed;
