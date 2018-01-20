@@ -9,10 +9,13 @@ with Ada.Text_IO;
 use Ada.Text_IO;
 with Ada.Float_Text_IO;
 use Ada.Float_Text_IO;
-
+with Ada.Real_Time;
+use Ada.Real_Time;
+with System;
 with Ada.Calendar;
 use Ada.Calendar;
-with Ada.Numerics.Float_Random;
+-- with Ada.Numerics.Float_Random;
+with Ada.Numerics.Discrete_Random;
 
 with Ada.Strings;
 use Ada.Strings;
@@ -25,9 +28,15 @@ use Ada.Exceptions;
 procedure Panel is
 
   Koniec : Boolean := False with Atomic;
+  IsCruiseControlActive : Boolean := False;
+  ShouldSlowDown : Boolean := False;
+  IncrementValue : Integer := 0;
 
-  type CruiseControlStates is (On, Off);
-  CruiseControlState : CruiseControlStates := Off with Atomic;
+  subtype Do5 is Integer range 0..5;
+  package Losuj is new Ada.Numerics.Discrete_Random(Do5);
+
+  type Stany is (Duzo, Malo);
+  Stan : Stany := Malo with Atomic;
 
   type Atrybuty is (Czysty, Jasny, Podkreslony, Negatyw, Migajacy, Szary);
 
@@ -84,62 +93,99 @@ procedure Panel is
     procedure Tlo is
     begin
       Ekran.Czysc;
-      Ekran.Pisz_XY(1,1,"+=========== Automatyczny tempomat ===========+");
-      Ekran.Pisz_XY(3,5,"Aktualna prędkość =");
-      Ekran.Pisz_XY(9,7,"Stan tempomatu:");
-      Ekran.Pisz_XY(1,10,"+======== Instrukcja ========+");
-      Ekran.Pisz_XY(1,11,"Space - Start");
-      Ekran.Pisz_XY(1,12,"W - przyspiesz");
-      Ekran.Pisz_XY(1,13,"S - zwolnij");
-      Ekran.Pisz_XY(1,14,"E - włącz/wyłącz tempomat");
-      Ekran.Pisz_XY(1,15,"A - Zwiększ prędkość tempomatu o 10 km/h");
-      Ekran.Pisz_XY(1,15,"D - Zmiejsz prędkość tempomatu o 10 km/h");
-
+      Ekran.Pisz_XY(1,1,"+=========== Panel ===========+");
+      Ekran.Pisz_XY(3,5,"Ostatni wynik =");
+      Ekran.Pisz_XY(9,7,"Stan:");
+      Ekran.Pisz_XY(1,10,"+= Q-koniec, D-dużo, M-mało =+");
     end Tlo;
 
   end Ekran;
 
-  task Przebieg;
+  protected Zdarzenie is
+    entry Czekaj(Ok: out Natural);
+    procedure Wstaw(Ok: in Natural);
+  private
+    pragma Priority (System.Default_Priority+4);
+    Okres : Natural := 0;
+    Jest_Zdarzenie : Boolean := False;
+  end Zdarzenie;
 
-  task body Przebieg is
-    use Ada.Numerics.Float_Random;
+  protected body Zdarzenie is
+    entry Czekaj(Ok: out Natural) when Jest_Zdarzenie is
+    begin
+      Jest_Zdarzenie := False;
+      Ok := Okres;
+    end Czekaj;
+    procedure Wstaw(Ok: in Natural) is
+    begin
+      Jest_Zdarzenie := True;
+      Okres := Ok;
+    end Wstaw;
+  end Zdarzenie;
 
-    Nastepny     : Ada.Calendar.Time;
-    Okres        : conCruiseControlStatet Duration := 0.8; -- sekundy
-    Przesuniecie : conCruiseControlStatet Duration := 0.5;
+  function SpeedControl(Speed : Integer) return Integer;
 
-    Gen : Generator;
-    function Los_Fun return Float is
-        (Random(Gen) * (if CruiseControlState=On then 80.0 else 20.0) - 20.0);
-    Wartosc : Float := Los_Fun;
+  function SpeedControl(Speed : Integer) return Integer is
+      use Losuj;
+      G : Generator;
+      NewSpeed : Integer;
   begin
-    Reset(Gen);
-    Nastepny := Clock + Przesuniecie;
-    loop
-      delay until Nastepny;
-      Wartosc := Los_Fun;
-      Ekran.Pisz_XY(19 ,5, 20*' ', Atryb=>Czysty);
-      Ekran.Pisz_Float_XY(19, 5, Wartosc, Atryb=>Negatyw);
-      Ekran.Pisz_XY(15 ,7, CruiseControlState'Img, Atryb=>Podkreslony);
-      exit when Koniec;
-      Nastepny := Nastepny + Okres;
-    end loop;
-    Ekran.Pisz_XY(1,11,"");
-    exception
-      when E:others =>
-        Put_Line("Error: Zadanie Przebieg");
-        Put_Line(Exception_Name (E) & ": " & Exception_Message (E));
-  end Przebieg;
+      Reset(G);
+      if not IsCruiseControlActive then
+          if shouldSlowDown then
+              NewSpeed := Speed - Random(G);
+          else
+              NewSpeed := Speed + Random(G);
+          end if;
+      else
+          NewSpeed := Speed;
+      end if;
+      return NewSpeed;
+  end SpeedControl;
 
+  task Drive;
+
+  task body Drive is
+      use Losuj;
+      Next : Ada.Real_Time.Time;
+      Interval : constant Ada.Real_Time.Time_Span := Ada.Real_Time.Milliseconds(1200);
+      Speed: Integer := 0;
+      G : Generator;
+      Ok : Natural;
+  begin
+      Zdarzenie.Czekaj(Ok);
+      Reset(G);
+      Next := Ada.Real_Time.Clock;
+      loop
+          delay until Next;
+          Speed := SpeedControl(Speed);
+          Ekran.Pisz_Float_XY(19, 5, Float(Speed), Atryb=>Negatyw);
+          exit when Koniec;
+          Next := Next + Interval;
+      end loop;
+  exception
+      when others => null;
+  end Drive;
+
+-- Panel body
   Zn : Character;
-
 begin
   -- inicjowanie
   Ekran.Tlo;
   loop
-    Get_Immediate(Zn);
-    exit when Zn in 'q'|'Q';
-    CruiseControlState := (if Zn in 'D'|'d' then On elsif Zn in 'M'|'m' then Off else CruiseControlState);
+      Get_Immediate(Zn);
+      case Zn is
+          when ' ' => Zdarzenie.Wstaw(0);
+          when 'w' => ShouldSlowDown := False;
+          when 's' => ShouldSlowDown := True;
+          when 'e' => IsCruiseControlActive := not IsCruiseControlActive;
+          when 'a' => IncrementValue := 10;
+          when 'd' => IncrementValue := -10;
+          when 'q' => exit;
+          when others  => null;
+      end case;
+    -- exit when Zn in 'q'|'Q';
+    -- Stan := (if Zn in 'D'|'d' then Duzo elsif Zn in 'M'|'m' then Malo else Stan);
   end loop;
   Koniec := True;
 end Panel;
