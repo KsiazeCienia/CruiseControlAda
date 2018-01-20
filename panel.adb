@@ -94,9 +94,19 @@ procedure Panel is
     begin
       Ekran.Czysc;
       Ekran.Pisz_XY(1,1,"+=========== Panel ===========+");
-      Ekran.Pisz_XY(3,5,"Ostatni wynik =");
+      Ekran.Pisz_XY(3,5,"Aktualna prędkość =");
+      Ekran.Pisz_XY(29,5,"km/h");
       Ekran.Pisz_XY(9,7,"Stan:");
-      Ekran.Pisz_XY(1,10,"+= Q-koniec, D-dużo, M-mało =+");
+      Ekran.Pisz_XY(1,10,"+========= Instrukcja ========+");
+      Ekran.Pisz_XY(1,11,"Spacja - start");
+      Ekran.Pisz_XY(1,12,"W - przyspiesz");
+      Ekran.Pisz_XY(1,13,"S - zwlonij");
+      Ekran.Pisz_XY(1,14,"E - włącz/wyłącz tempomat");
+      Ekran.Pisz_XY(1,15,"R - zwiększ predkość tempoamtu o 10km/h");
+      Ekran.Pisz_XY(1,16,"F - zminiejsz prędkość tempomatu o 10km/h");
+      Ekran.Pisz_XY(1,17,"T - zwiększ prędkość tempomatu o 1 km/h");
+      Ekran.Pisz_XY(1,18,"G - zminiejsz prędkość tempoamtu o 1 km/h");
+
     end Tlo;
 
   end Ekran;
@@ -172,7 +182,7 @@ procedure Panel is
       loop
           delay until Next;
           Speed := SpeedControl(Speed);
-          Ekran.Pisz_Float_XY(19, 5, Float(Speed), Atryb=>Negatyw);
+          Ekran.Pisz_Float_XY(23, 5, Float(Speed), Atryb=>Negatyw);
           exit when Koniec;
           Next := Next + Interval;
       end loop;
