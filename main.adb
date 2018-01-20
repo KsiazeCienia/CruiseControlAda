@@ -4,8 +4,7 @@ with Ada.Text_IO;
 use Ada.Text_IO;
 with Ada.Real_Time;
 use Ada.Real_Time;
-with Panel;
-use Panel;
+
 
 procedure Main is
 
@@ -54,9 +53,6 @@ procedure Main is
                 NewSpeed := Speed + Random(G);
             end if;
         else
-            if IncrementValue != 0 then
-                NewSpeed := Speed;
-            end
             NewSpeed := Speed;
 
         end if;
@@ -80,7 +76,9 @@ procedure Main is
         loop
             delay until Next;
             Speed := Main.SpeedControl(Speed);
-            Panel.Ekran.Pisz_Float_XY(23, 5, Speed, Panel.Atryb=>Negatyw);
+            -- Panel.Ekran.Pisz_Float_XY(23, 5, Speed, Panel.Atryb=>Negatyw);
+            Put_Line("Aktualna prędkośc wynosi" & Speed'Img & "km\h");
+
             Next := Next + Interval;
         end loop;
     exception
