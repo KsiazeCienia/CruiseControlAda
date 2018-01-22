@@ -24,12 +24,11 @@ use Ada.Exceptions;
 
 procedure Panel is
 
-  Koniec : Boolean := False with Atomic;
-  IsCruiseControlActive : Boolean := False;
+  Quit : Boolean := False with Atomic;
   ShouldSlowDown : Boolean := False;
   IncrementValue : Integer := 0;
 
-  subtype Do5 is Integer range 0..5;
+  subtype Do5 is Integer range 1..5;
   package Losuj is new Ada.Numerics.Discrete_Random(Do5);
 
   type Stany is (Wlaczony, Wylaczony);
@@ -37,19 +36,19 @@ procedure Panel is
 
   type Atrybuty is (Czysty, Jasny, Podkreslony, Negatyw, Migajacy, Szary);
 
-  protected Ekran  is
-    procedure Pisz_XY(X,Y: Positive; S: String; Atryb : Atrybuty := Czysty);
-    procedure Pisz_Float_XY(X, Y: Positive;
+  protected Screen  is
+    procedure Write_XY(X,Y: Positive; S: String; Atryb : Atrybuty := Czysty);
+    procedure Write_Number(X, Y: Positive;
                             Num: Float;
                             Pre: Natural := 3;
                             Aft: Natural := 2;
                             Exp: Natural := 0;
                             Atryb : Atrybuty := Czysty);
-    procedure Czysc;
-    procedure Tlo;
-  end Ekran;
+    procedure Clear;
+    procedure Background;
+  end Screen;
 
-  protected body Ekran is
+  protected body Screen is
     -- implementacja dla Linuxa i macOSX
     function Atryb_Fun(Atryb : Atrybuty) return String is
       (case Atryb is
@@ -59,15 +58,15 @@ procedure Panel is
     function Esc_XY(X,Y : Positive) return String is
       ( (ASCII.ESC & "[" & Trim(Y'Img,Both) & ";" & Trim(X'Img,Both) & "H") );
 
-    procedure Pisz_XY(X,Y: Positive; S: String; Atryb : Atrybuty := Czysty) is
+    procedure Write_XY(X,Y: Positive; S: String; Atryb : Atrybuty := Czysty) is
       Przed : String := ASCII.ESC & "[" & Atryb_Fun(Atryb);
     begin
       Put( Przed);
       Put( Esc_XY(X,Y) & S);
       Put( ASCII.ESC & "[0m");
-    end Pisz_XY;
+    end Write_XY;
 
-    procedure Pisz_Float_XY(X, Y: Positive;
+    procedure Write_Number(X, Y: Positive;
                             Num: Float;
                             Pre: Natural := 3;
                             Aft: Natural := 2;
@@ -80,55 +79,55 @@ procedure Panel is
       Put( Esc_XY(X, Y) );
       Put( Num, Pre, Aft, Exp);
       Put( ASCII.ESC & "[0m");
-    end Pisz_Float_XY;
+    end Write_Number;
 
-    procedure Czysc is
+    procedure Clear is
     begin
       Put(ASCII.ESC & "[2J");
-    end Czysc;
+    end Clear;
 
-    procedure Tlo is
+    procedure Background is
     begin
-      Ekran.Czysc;
-      Ekran.Pisz_XY(1,1,"+=========== Panel ===========+");
-      Ekran.Pisz_XY(3,5,"Aktualna prędkość =");
-      Ekran.Pisz_XY(29,5,"km/h");
-      Ekran.Pisz_XY(4,7,"Stan tempomatu:");
-      Ekran.Pisz_XY(1,10,"+========= Instrukcja ========+");
-      Ekran.Pisz_XY(1,11,"Spacja - start");
-      Ekran.Pisz_XY(1,12,"W - przyspiesz");
-      Ekran.Pisz_XY(1,13,"S - zwlonij");
-      Ekran.Pisz_XY(1,14,"E - włącz/wyłącz tempomat");
-      Ekran.Pisz_XY(1,15,"R - zwiększ predkość tempoamtu o 10km/h");
-      Ekran.Pisz_XY(1,16,"F - zminiejsz prędkość tempomatu o 10km/h");
-      Ekran.Pisz_XY(1,17,"T - zwiększ prędkość tempomatu o 1 km/h");
-      Ekran.Pisz_XY(1,18,"G - zminiejsz prędkość tempoamtu o 1 km/h");
-      Ekran.Pisz_XY(1,19,"Q - Wyjście");
-    end Tlo;
+      Screen.Clear;
+      Screen.Write_XY(1,1,"+=========== Panel ===========+");
+      Screen.Write_XY(3,5,"Aktualna prędkość =");
+      Screen.Write_XY(29,5,"km/h");
+      Screen.Write_XY(4,7,"Stan tempomatu:");
+      Screen.Write_XY(1,10,"+========= Instrukcja ========+");
+      Screen.Write_XY(1,11,"Spacja - start");
+      Screen.Write_XY(1,12,"W - przyspiesz");
+      Screen.Write_XY(1,13,"S - zwlonij");
+      Screen.Write_XY(1,14,"E - włącz/wyłącz tempomat");
+      Screen.Write_XY(1,15,"R - zwiększ predkość tempoamtu o 10km/h");
+      Screen.Write_XY(1,16,"F - zminiejsz prędkość tempomatu o 10km/h");
+      Screen.Write_XY(1,17,"T - zwiększ prędkość tempomatu o 1 km/h");
+      Screen.Write_XY(1,18,"G - zminiejsz prędkość tempoamtu o 1 km/h");
+      Screen.Write_XY(1,19,"Q - Wyjście");
+    end Background;
 
-  end Ekran;
+  end Screen;
 
-  protected Zdarzenie is
-    entry Czekaj(Ok: out Natural);
-    procedure Wstaw(Ok: in Natural);
+  protected Event is
+    entry Wait(Ok: out Natural);
+    procedure Make(Ok: in Natural);
   private
     pragma Priority (System.Default_Priority+4);
     Okres : Natural := 0;
-    Jest_Zdarzenie : Boolean := False;
-  end Zdarzenie;
+    isEvent : Boolean := False;
+  end Event;
 
-  protected body Zdarzenie is
-    entry Czekaj(Ok: out Natural) when Jest_Zdarzenie is
+  protected body Event is
+    entry Wait(Ok: out Natural) when isEvent is
     begin
-      Jest_Zdarzenie := False;
+      isEvent := False;
       Ok := Okres;
-    end Czekaj;
-    procedure Wstaw(Ok: in Natural) is
+    end Wait;
+    procedure Make(Ok: in Natural) is
     begin
-      Jest_Zdarzenie := True;
+      isEvent := True;
       Okres := Ok;
-    end Wstaw;
-  end Zdarzenie;
+    end Make;
+  end Event;
 
   function SpeedControl(Speed : Integer) return Integer;
 
@@ -171,18 +170,18 @@ procedure Panel is
   task body Drive is
       use Losuj;
       Next : Ada.Real_Time.Time;
-      Interval : constant Ada.Real_Time.Time_Span := Ada.Real_Time.Milliseconds(1200);
+      Interval : constant Ada.Real_Time.Time_Span := Ada.Real_Time.Milliseconds(1000);
       Speed: Integer := 0;
       Ok : Natural;
   begin
-      Zdarzenie.Czekaj(Ok);
+      Event.Wait(Ok);
       Next := Ada.Real_Time.Clock;
       loop
           delay until Next;
           Speed := SpeedControl(Speed);
-          Ekran.Pisz_Float_XY(23, 5, Float(Speed), Atryb=>Negatyw);
-          Ekran.Pisz_XY(20,7,Stan'Img, Atryb=>Podkreslony);
-          exit when Koniec;
+          Screen.Write_Number(23, 5, Float(Speed), Atryb=>Negatyw);
+          Screen.Write_XY(20,7,Stan'Img, Atryb=>Podkreslony);
+          exit when Quit;
           Next := Next + Interval;
       end loop;
   exception
@@ -194,11 +193,11 @@ procedure Panel is
   Zn : Character;
 begin
   -- inicjowanie
-  Ekran.Tlo;
+  Screen.Background;
   loop
       Get_Immediate(Zn);
       case Zn is
-          when ' ' => Zdarzenie.Wstaw(0);
+          when ' ' => Event.Make(0);
           when 'w' => ShouldSlowDown := False;
           when 's' => ShouldSlowDown := True;
           when 'e' => Stan := (if Stan = Wlaczony then Wylaczony else Wlaczony);
@@ -209,8 +208,6 @@ begin
           when 'q' => exit;
           when others  => null;
       end case;
-    -- exit when Zn in 'q'|'Q';
-    -- Stan := (if Zn in 'D'|'d' then On elsif Zn in 'M'|'m' then Off else Stan);
   end loop;
-  Koniec := True;
+  Quit := True;
 end Panel;
