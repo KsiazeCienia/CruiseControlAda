@@ -1,9 +1,6 @@
--- panel.adb
---
--- materiały dydaktyczne
--- 2016
--- (c) Jacek Piwowarczyk
---
+--Marcin Włoczko
+--Michał Mielus
+--Tempomat
 
 with Ada.Text_IO;
 use Ada.Text_IO;
@@ -35,8 +32,8 @@ procedure Panel is
   subtype Do5 is Integer range 0..5;
   package Losuj is new Ada.Numerics.Discrete_Random(Do5);
 
-  type Stany is (Duzo, Malo);
-  Stan : Stany := Malo with Atomic;
+  type Stany is (Wlaczony, Wylaczony);
+  Stan : Stany := Wylaczony with Atomic;
 
   type Atrybuty is (Czysty, Jasny, Podkreslony, Negatyw, Migajacy, Szary);
 
@@ -96,7 +93,7 @@ procedure Panel is
       Ekran.Pisz_XY(1,1,"+=========== Panel ===========+");
       Ekran.Pisz_XY(3,5,"Aktualna prędkość =");
       Ekran.Pisz_XY(29,5,"km/h");
-      Ekran.Pisz_XY(9,7,"Stan:");
+      Ekran.Pisz_XY(4,7,"Stan tempomatu:");
       Ekran.Pisz_XY(1,10,"+========= Instrukcja ========+");
       Ekran.Pisz_XY(1,11,"Spacja - start");
       Ekran.Pisz_XY(1,12,"W - przyspiesz");
@@ -143,7 +140,7 @@ procedure Panel is
   begin
       Reset(G);
       SpeedIncrease := Random(G);
-      if not IsCruiseControlActive then
+      if Stan = Wylaczony then
           if shouldSlowDown then
               NewSpeed := Speed - SpeedIncrease;
           else
@@ -176,22 +173,22 @@ procedure Panel is
       Next : Ada.Real_Time.Time;
       Interval : constant Ada.Real_Time.Time_Span := Ada.Real_Time.Milliseconds(1200);
       Speed: Integer := 0;
-      G : Generator;
       Ok : Natural;
   begin
       Zdarzenie.Czekaj(Ok);
-      Reset(G);
       Next := Ada.Real_Time.Clock;
       loop
           delay until Next;
           Speed := SpeedControl(Speed);
           Ekran.Pisz_Float_XY(23, 5, Float(Speed), Atryb=>Negatyw);
+          Ekran.Pisz_XY(20,7,Stan'Img, Atryb=>Podkreslony);
           exit when Koniec;
           Next := Next + Interval;
       end loop;
   exception
       when others => null;
   end Drive;
+
 
 -- Panel body
   Zn : Character;
@@ -204,7 +201,7 @@ begin
           when ' ' => Zdarzenie.Wstaw(0);
           when 'w' => ShouldSlowDown := False;
           when 's' => ShouldSlowDown := True;
-          when 'e' => IsCruiseControlActive := not IsCruiseControlActive;
+          when 'e' => Stan := (if Stan = Wlaczony then Wylaczony else Wlaczony);
           when 'r' => IncrementValue := 10;
           when 'f' => IncrementValue := -10;
           when 't' => IncrementValue := 1;
@@ -213,7 +210,7 @@ begin
           when others  => null;
       end case;
     -- exit when Zn in 'q'|'Q';
-    -- Stan := (if Zn in 'D'|'d' then Duzo elsif Zn in 'M'|'m' then Malo else Stan);
+    -- Stan := (if Zn in 'D'|'d' then On elsif Zn in 'M'|'m' then Off else Stan);
   end loop;
   Koniec := True;
 end Panel;
