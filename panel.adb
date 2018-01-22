@@ -24,8 +24,9 @@ use Ada.Exceptions;
 procedure Panel is
 
   Quit : Boolean := False with Atomic;
-  ShouldSlowDown : Boolean := False;
-  IncrementValue : Integer := 0;
+  ShouldSlowDown : Boolean := False with Atomic;
+  IncrementValue : Integer := 0 with Atomic;
+  Distance : Float := 0.0;
 
   subtype Do5 is Integer range 1..5;
   package Losuj is new Ada.Numerics.Discrete_Random(Do5);
@@ -89,8 +90,10 @@ procedure Panel is
     begin
       Screen.Clear;
       Screen.Write_XY(1,1,"+=========== Panel ===========+");
-      Screen.Write_XY(3,5,"Aktualna prędkość =");
-      Screen.Write_XY(29,5,"km/h");
+      Screen.Write_XY(3,3,"Aktualna prędkość =");
+      Screen.Write_XY(29,3,"km/h");
+      Screen.Write_XY(3,5,"Pokonany dystans =");
+      Screen.Write_XY(29,5, " km");
       Screen.Write_XY(4,7,"Stan tempomatu:");
       Screen.Write_XY(1,10,"+========= Instrukcja ========+");
       Screen.Write_XY(1,11,"Spacja - start");
@@ -128,6 +131,15 @@ procedure Panel is
     end Make;
   end Event;
 
+  function CalculateDistance(Speed : Integer) return Float;
+
+  function CalculateDistance(Speed : Integer) return Float is
+      Distance : Float;
+  begin
+      Distance := Float(Speed) / 3600.0;
+      return Distance;
+  end;
+
   function SpeedControl(Speed : Integer) return Integer;
 
   function SpeedControl(Speed : Integer) return Integer is
@@ -159,6 +171,9 @@ procedure Panel is
       end if;
       if NewSpeed < 0 then
           NewSpeed := 0;
+      else if NewSpeed > 240 then
+          NewSpeed := 240;
+      end if;
       end if;
 
       return NewSpeed;
@@ -178,7 +193,9 @@ procedure Panel is
       loop
           delay until Next;
           Speed := SpeedControl(Speed);
-          Screen.Write_Number(23, 5, Float(Speed), Atryb=>Negatyw);
+          Distance := Distance + CalculateDistance(Speed);
+          Screen.Write_Number(23, 3, Float(Speed), Atryb=>Negatyw);
+          Screen.Write_Number(23, 5, Distance, Atryb=>Negatyw);
           Screen.Write_XY(20,7,Stan'Img, Atryb=>Podkreslony);
           exit when Quit;
           Next := Next + Interval;
