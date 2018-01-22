@@ -11,7 +11,6 @@ use Ada.Real_Time;
 with System;
 with Ada.Calendar;
 use Ada.Calendar;
--- with Ada.Numerics.Float_Random;
 with Ada.Numerics.Discrete_Random;
 
 with Ada.Strings;
@@ -98,11 +97,11 @@ procedure Panel is
       Screen.Write_XY(1,12,"W - przyspiesz");
       Screen.Write_XY(1,13,"S - zwlonij");
       Screen.Write_XY(1,14,"E - włącz/wyłącz tempomat");
-      Screen.Write_XY(1,15,"R - zwiększ predkość tempoamtu o 10km/h");
-      Screen.Write_XY(1,16,"F - zminiejsz prędkość tempomatu o 10km/h");
+      Screen.Write_XY(1,15,"R - zwiększ predkość tempomatu o 10km/h");
+      Screen.Write_XY(1,16,"F - zmniejsz prędkość tempomatu o 10km/h");
       Screen.Write_XY(1,17,"T - zwiększ prędkość tempomatu o 1 km/h");
-      Screen.Write_XY(1,18,"G - zminiejsz prędkość tempoamtu o 1 km/h");
-      Screen.Write_XY(1,19,"Q - Wyjście");
+      Screen.Write_XY(1,18,"G - zmniejsz prędkość tempomatu o 1 km/h");
+      Screen.Write_XY(1,19,"Q - wyjście");
     end Background;
 
   end Screen;
